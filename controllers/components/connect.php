@@ -107,12 +107,26 @@ class ConnectComponent extends Object {
 	* @return boolean True if successful, false otherwise.
 	*/
 	function __syncFacebookUser(){
-		if(!isset($this->Controller->Auth)){
+		if(isset($this->Controller->Auth)) {
+			return $this->__syncFacebookUserAuth();
+		} else if (isset($this->Controller->Authsome)) {
+			return $this->__syncFacebookUserAuthsome();
+		} else {
 			return false;
 		}
+	}
+
+/**
+ * 
+ *
+ * @return void
+ * @author Christoph Tavan <tavan@nemata.com>
+ * @access public
+ **/
+	function __syncFacebookUserAuth() {
 		// set Auth to a convenience variable
 		$Auth = $this->Controller->Auth;
-		if (!$this->__initUserModel()) {
+		if (!$this->__initUserModel('Auth')) {
 			return false;
 		}
 		// if you don't have a facebook_id field in your user table, throw an error
@@ -155,6 +169,93 @@ class ConnectComponent extends Object {
 				$this->__runCallback('beforeFacebookLogin', $this->authUser);
 				$Auth->fields = array('username' => 'facebook_id', 'password' => $Auth->fields['password']);    		
 				if($Auth->login($this->authUser)){
+					$this->__runCallback('afterFacebookLogin');
+				}
+			}
+			return true;
+		}
+	}
+
+/**
+ * 
+ *
+ * @return void
+ * @author Christoph Tavan <tavan@nemata.com>
+ * @access public
+ **/
+	function __syncFacebookUserAuthsome() {
+		// set Auth to a convenience variable
+		$Auth = $this->Controller->Authsome;
+		if (!$this->__initUserModel('Authsome')) {
+			return false;
+		}
+		// if you don't have a facebook_id field in your user table, throw an error
+		if(!$this->User->hasField('facebook_id')){
+			$this->__error("Facebook.Connect handleFacebookUser Error.  facebook_id not found in table.");
+			return false;
+		}
+		
+		// check if the user already has an account
+		// User is logged in but doesn't have a 
+		if(!User::is('guest')){
+			$this->hasAccount = true;
+			$this->User->id = User::get('User.id');
+			if (!$this->User->field('facebook_id')) {
+				$this->User->saveField('facebook_id', $this->uid);
+			}
+			return true;
+		}
+		else {
+			pr('user not logged in');
+			// attempt to find the user by their facebook id
+			$this->authUser = $this->User->findByFacebookId($this->uid);
+
+			//if we have a user, set hasAccount
+			if(!empty($this->authUser)){
+				$this->hasAccount = true;
+			}
+			//create the user if we don't have one
+			elseif(empty($this->authUser) && $this->createUser) {
+				$map = array(
+					'email' => 'login',
+					'name' => 'name',
+					'first_name' => 'fname',
+					'last_name' => 'lname',
+					'gender' => 'gender',
+				);
+				$fb = array_merge(
+					array_combine(array_keys($map), array_fill(0, count($map), '')),
+					$this->user()
+				);
+				$pass = User::hashPassword(FacebookInfo::randPass());
+				$user = array(
+					'signup_from_fb' => 1,
+					'facebook_id' => $this->uid,
+					'lang' => LANG,
+					'password' => $pass,
+					'repeat_password' => $pass,
+					'active' => 1,
+					'username' => $this->User->generateUsername($fb['email']),
+					'whitelabel_client_id' => Whitelabel::id(),
+					'role_id' => $this->User->Role->lookup('user', 'id', false)
+				);
+				foreach ($map as $fbKey => $myKey) {
+					$user[$myKey] = $fb[$fbKey];
+				}
+				$this->authUser[$this->User->alias] = $user;
+				if($this->__runCallback('beforeFacebookSave')){
+					$this->hasAccount = ($this->User->save($this->authUser));
+					$this->authUser[$this->User->alias]['id'] = $this->User->id;
+				}
+				else {
+					$this->authUser = null;
+				}
+			}
+			//Login user if we have one
+			if($this->authUser){
+				pr('user authenticated force login');
+				$this->__runCallback('beforeFacebookLogin', $this->authUser);
+				if(Authsome::login('forced', $this->authUser[$this->User->alias]['id'])){
 					$this->__runCallback('afterFacebookLogin');
 				}
 			}
@@ -209,8 +310,16 @@ class ConnectComponent extends Object {
 	* @return true if successful
 	* @access private
 	*/
-	function __initUserModel(){
-		$this->User = ClassRegistry::init($this->Controller->Auth->userModel);
+	function __initUserModel($component = 'Auth'){
+		switch($component) {
+			case 'Authsome':
+				$this->User = ClassRegistry::init($this->Controller->Authsome->settings['model']);
+				break;
+			case 'Auth':
+			default:
+				$this->User = ClassRegistry::init($this->Controller->Auth->userModel);
+				break;
+		}
 		if (isset($this->User)) {
 			$this->User->recursive = -1;
 			return true;
