@@ -12,7 +12,7 @@ class FacebookHelper extends AppHelper {
 	/**
 	* Helpers to load with this helper.
 	*/
-	var $helpers = array('Html', 'Session');
+	var $helpers = array('Html', 'Session', 'Javascript');
 	
 	/**
 	* Default Facebook.Share javascript URL
@@ -460,7 +460,7 @@ class FacebookHelper extends AppHelper {
 				$callback = "if(typeof(facebookReady)=='function'){facebookReady()}";
 			}
 			$init = '<div id="fb-root"></div>';
-			$init .= $this->Html->scriptBlock(
+			$init .= $this->Javascript->codeBlock(
 <<<JS
 window.fbAsyncInit = function() {
 	FB.init({
