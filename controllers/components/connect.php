@@ -199,10 +199,11 @@ class ConnectComponent extends Object {
 		// User is logged in but doesn't have a 
 		if(!User::is('guest')){
 			$this->hasAccount = true;
-			$this->User->id = User::get('User.id');
+			$this->User->id = User::get('id');
 			if (!$this->User->field('facebook_id')) {
 				if (!$this->User->save(array('facebook_id' => $this->uid))) {
 					$this->Controller->set('facebookConnectError', $this->User->validationErrors);
+					//$this->Controller->Message->add($this->User->validationErrors['facebook_id'], error);
 					FB::forceClearAllPersistentData();
 					return false;
 				}
@@ -210,7 +211,6 @@ class ConnectComponent extends Object {
 			return true;
 		}
 		else {
-			pr('user not logged in');
 			// attempt to find the user by their facebook id
 			$this->authUser = $this->User->findByFacebookId($this->uid);
 
@@ -248,7 +248,13 @@ class ConnectComponent extends Object {
 				}
 				$this->authUser[$this->User->alias] = $user;
 				if($this->__runCallback('beforeFacebookSave')){
-					$this->hasAccount = ($this->User->save($this->authUser));
+					if (!$this->User->save($this->authUser)) {
+						$this->Controller->set('facebookConnectError', $this->User->validationErrors);
+						//$this->Controller->Message->add($this->User->validationErrors['login'], error);
+						FB::forceClearAllPersistentData();
+						return false;
+					}
+					$this->hasAccount = true;
 					$this->authUser[$this->User->alias]['id'] = $this->User->id;
 				}
 				else {
