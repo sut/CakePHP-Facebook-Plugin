@@ -201,7 +201,11 @@ class ConnectComponent extends Object {
 			$this->hasAccount = true;
 			$this->User->id = User::get('User.id');
 			if (!$this->User->field('facebook_id')) {
-				$this->User->saveField('facebook_id', $this->uid);
+				if (!$this->User->save(array('facebook_id' => $this->uid))) {
+					$this->Controller->set('facebookConnectError', $this->User->validationErrors);
+					FB::forceClearAllPersistentData();
+					return false;
+				}
 			}
 			return true;
 		}
