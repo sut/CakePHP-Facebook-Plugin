@@ -448,7 +448,7 @@ class FacebookHelper extends AppHelper {
 	* @example $this->Facebook->init();
 	* @return string of scriptBlock for FB.init() or error
 	*/
-	function init($options = null, $reload = true) {
+	function init($options = null, $reload = true, $readyCallback = '') {
 		if (empty($options)) {
 			$options = array();
 		}
@@ -457,7 +457,7 @@ class FacebookHelper extends AppHelper {
 			if ($reload) {
 				$callback = "FB.Event.subscribe('auth.login',function(){window.location.reload()});";
 			} else {
-				$callback = "if(typeof(facebookReady)=='function'){facebookReady()}";
+				$callback = "if(typeof(facebookReady)=='function'){facebookReady()};";
 			}
 			$init = '<div id="fb-root"></div>';
 			$init .= $this->Javascript->codeBlock(
@@ -472,6 +472,7 @@ window.fbAsyncInit = function() {
 		oauth : true // use Oauth
 	});
 	{$callback}
+	{$readyCallback}
 };
 (function() {
 	var e = document.createElement('script');
