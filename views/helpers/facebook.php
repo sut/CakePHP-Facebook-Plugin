@@ -448,7 +448,7 @@ class FacebookHelper extends AppHelper {
 	* @example $this->Facebook->init();
 	* @return string of scriptBlock for FB.init() or error
 	*/
-	function init($options = null, $reload = true, $readyCallback = '') {
+	function init($options = null, $reload = true) {
 		if (empty($options)) {
 			$options = array();
 		}
@@ -471,7 +471,6 @@ window.fbAsyncInit = function() {
 		oauth : true // use Oauth
 	});
 	{$callback}
-	{$readyCallback}
 };
 (function() {
 	var e = document.createElement('script');
