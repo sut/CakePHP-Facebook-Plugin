@@ -39,6 +39,10 @@ class Facebook extends BaseFacebook
     parent::__construct($config);
   }
 
+  public function forceClearAllPersistentData() {
+    self::clearAllPersistentData();
+  }
+
   protected static $kSupportedKeys =
     array('state', 'code', 'access_token', 'user_id');
 
