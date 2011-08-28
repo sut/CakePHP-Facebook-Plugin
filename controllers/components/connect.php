@@ -195,6 +195,10 @@ class ConnectComponent extends Object {
 			return false;
 		}
 		
+		if (User::get('facebook_id') === $this->uid) {
+			$this->hasAccount = true;
+			return true;
+		}
 		// check if the user already has an account
 		// User is logged in but doesn't have a 
 		if(!User::is('guest')){
@@ -263,7 +267,6 @@ class ConnectComponent extends Object {
 			}
 			//Login user if we have one
 			if($this->authUser){
-				pr('user authenticated force login');
 				$this->__runCallback('beforeFacebookLogin', $this->authUser);
 				if(Authsome::login('forced', $this->authUser[$this->User->alias]['id'])){
 					$this->__runCallback('afterFacebookLogin');
