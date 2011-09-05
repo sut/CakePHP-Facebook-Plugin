@@ -32,17 +32,11 @@ class FacebookInfo {
     * @access public
     */
   static function getConfig($key = null){
-    if (!empty($key)) {
-			if (isset(self::$configs[$key]) || (self::$configs[$key] = Configure::read("Facebook.$key"))) {
-				return self::$configs[$key];
-			} elseif (Configure::load('facebook') && (self::$configs[$key] = Configure::read("Facebook.$key"))) {
-				return self::$configs[$key];
-			}
-		} else {
-			Configure::load('facebook');
-			return Configure::read('Facebook');
-		}
-		return null;
+	if (!Configure::read('Facebook')) {
+		Configure::load('facebook');
+	}
+	$key = !empty($key) ? '.' . $key : '';
+	return Configure::read('Facebook' . $key);
   }
   
   /**
