@@ -189,35 +189,38 @@ class ConnectComponent extends Object {
 		if (!$this->__initUserModel('Authsome')) {
 			return false;
 		}
-		// if you don't have a facebook_id field in your user table, throw an error
-		if(!$this->User->hasField('facebook_id')){
-			$this->__error("Facebook.Connect handleFacebookUser Error.  facebook_id not found in table.");
-			return false;
-		}
-		
-		if (User::get('facebook_id') === $this->uid) {
+
+		if (Authsome::get('facebook_id') === $this->uid) {
 			$this->hasAccount = true;
 			return true;
 		}
 		// check if the user already has an account
 		// User is logged in but doesn't have a 
-		if(!User::is('guest')){
+		if(Authsome::get('group') != 'anonymous'){
 			$this->hasAccount = true;
-			$this->User->id = User::get('id');
-			if (!$this->User->field('facebook_id')) {
-				if (!$this->User->save(array('facebook_id' => $this->uid))) {
-					$this->Controller->set('facebookConnectError', $this->User->validationErrors);
+			$this->User->id = Authsome::get('_id');
+			
+			$alreadyConnected = $this->User->find('first', array('conditions' => array('User.facebook_id' => $this->uid)));
+			$user = Authsome::get();
+			$user['User']['facebook_id'] = $this->uid;
+			if (!Authsome::get('facebook_id') && empty($alreadyConnected)) {
+				echo 'saving: '.$this->uid;
+
+				if (!$this->User->save($user)) {
+					//$this->Controller->set('facebookConnectError', $this->User->validationErrors);
 					//$this->Controller->Message->add($this->User->validationErrors['facebook_id'], error);
 					FB::forceClearAllPersistentData();
 					return false;
 				}
+				$this->User->authsomeReLogin();
+			} else {
+				$this->Controller->set('fberror', __('Es ist bereits ein Konto mit diesem Facebook Benutzer verbunden.', true));
 			}
 			return true;
 		}
 		else {
 			// attempt to find the user by their facebook id
-			$this->authUser = $this->User->findByFacebookId($this->uid);
-
+			$this->authUser = $this->User->find('first', array('conditions' => array('User.facebook_id' => $this->uid)));
 			//if we have a user, set hasAccount
 			if(!empty($this->authUser)){
 				$this->hasAccount = true;
@@ -235,17 +238,13 @@ class ConnectComponent extends Object {
 					array_combine(array_keys($map), array_fill(0, count($map), '')),
 					$this->user()
 				);
-				$pass = User::hashPassword(FacebookInfo::randPass());
+				//$pass = User::hashPassword(FacebookInfo::randPass());
 				$user = array(
 					'signup_from_fb' => 1,
 					'facebook_id' => $this->uid,
-					'lang' => LANG,
-					'password' => $pass,
-					'repeat_password' => $pass,
-					'active' => 1,
-					'username' => $this->User->generateUsername($fb['email']),
-					'whitelabel_client_id' => Whitelabel::id(),
-					'role_id' => $this->User->Role->lookup('user', 'id', false)
+					'password' => '',
+					'repeat_password' => '',
+					'group' => 'default',
 				);
 				foreach ($map as $fbKey => $myKey) {
 					$user[$myKey] = $fb[$fbKey];
@@ -268,8 +267,11 @@ class ConnectComponent extends Object {
 			//Login user if we have one
 			if($this->authUser){
 				$this->__runCallback('beforeFacebookLogin', $this->authUser);
-				if(Authsome::login('forced', $this->authUser[$this->User->alias]['id'])){
-					$this->__runCallback('afterFacebookLogin');
+
+				if (!empty($this->Controller->params['url']['fblogin'])) {
+					if(Authsome::login('relogin', $this->authUser['User'])){
+						$this->__runCallback('afterFacebookLogin');
+					}
 				}
 			}
 			return true;
