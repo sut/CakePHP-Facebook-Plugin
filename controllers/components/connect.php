@@ -204,8 +204,6 @@ class ConnectComponent extends Object {
 			$user = Authsome::get();
 			$user['User']['facebook_id'] = $this->uid;
 			if (!Authsome::get('facebook_id') && empty($alreadyConnected)) {
-				echo 'saving: '.$this->uid;
-
 				if (!$this->User->save($user)) {
 					//$this->Controller->set('facebookConnectError', $this->User->validationErrors);
 					//$this->Controller->Message->add($this->User->validationErrors['facebook_id'], error);

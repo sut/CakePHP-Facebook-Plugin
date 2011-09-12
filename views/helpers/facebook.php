@@ -457,7 +457,8 @@ class FacebookHelper extends AppHelper {
 			if ($reload) {
 				$callback = "FB.Event.subscribe('auth.login',function(){window.location.reload()});";
 			} else {
-				$callback = "if(typeof(facebookReady)=='function'){facebookReady()};";
+				//$callback = "if(typeof(facebookReady)=='function'){facebookReady()};";
+				$callback = 'head.ready("facebook.js", function() {facebookReady();});';
 			}
 			$init = '<div id="fb-root"></div>';
 			$init .= $this->Javascript->codeBlock(
