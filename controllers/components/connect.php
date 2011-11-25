@@ -224,8 +224,8 @@ class ConnectComponent extends Object {
 				$this->hasAccount = true;
 			}
 			//create the user if we don't have one
-			elseif(empty($this->authUser) && $this->createUser) {
-				$_SESSION['fbuid'] = $this->uid;
+			elseif(empty($this->authUser)) {
+				$_SESSION[] = $this->user();
 			}
 			//Login user if we have one
 			if($this->authUser){
