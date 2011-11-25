@@ -225,42 +225,7 @@ class ConnectComponent extends Object {
 			}
 			//create the user if we don't have one
 			elseif(empty($this->authUser) && $this->createUser) {
-				$map = array(
-					'email' => 'login',
-					'name' => 'name',
-					'first_name' => 'fname',
-					'last_name' => 'lname',
-					'gender' => 'gender',
-				);
-				$fb = array_merge(
-					array_combine(array_keys($map), array_fill(0, count($map), '')),
-					$this->user()
-				);
-				//$pass = User::hashPassword(FacebookInfo::randPass());
-				$user = array(
-					'signup_from_fb' => 1,
-					'facebook_id' => $this->uid,
-					'password' => '',
-					'repeat_password' => '',
-					'group' => 'default',
-				);
-				foreach ($map as $fbKey => $myKey) {
-					$user[$myKey] = $fb[$fbKey];
-				}
-				$this->authUser[$this->User->alias] = $user;
-				if($this->__runCallback('beforeFacebookSave')){
-					if (!$this->User->save($this->authUser)) {
-						$this->Controller->set('facebookConnectError', $this->User->validationErrors);
-						//$this->Controller->Message->add($this->User->validationErrors['login'], error);
-						FB::forceClearAllPersistentData();
-						return false;
-					}
-					$this->hasAccount = true;
-					$this->authUser[$this->User->alias]['id'] = $this->User->id;
-				}
-				else {
-					$this->authUser = null;
-				}
+				$_SESSION['fbuid'] = $this->uid;
 			}
 			//Login user if we have one
 			if($this->authUser){
